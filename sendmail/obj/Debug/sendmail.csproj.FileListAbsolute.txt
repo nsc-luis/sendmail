@@ -1,0 +1,16 @@
+C:\Users\Dell\source\repos\sendmail\sendmail\bin\Debug\sendmail.exe.config
+C:\Users\Dell\source\repos\sendmail\sendmail\bin\Debug\sendmail.exe
+C:\Users\Dell\source\repos\sendmail\sendmail\bin\Debug\sendmail.pdb
+C:\Users\Dell\source\repos\sendmail\sendmail\bin\Debug\EntityFramework.dll
+C:\Users\Dell\source\repos\sendmail\sendmail\bin\Debug\EntityFramework.SqlServer.dll
+C:\Users\Dell\source\repos\sendmail\sendmail\bin\Debug\System.Data.SQLite.dll
+C:\Users\Dell\source\repos\sendmail\sendmail\bin\Debug\System.Data.SQLite.EF6.dll
+C:\Users\Dell\source\repos\sendmail\sendmail\bin\Debug\System.Data.SQLite.Linq.dll
+C:\Users\Dell\source\repos\sendmail\sendmail\bin\Debug\EntityFramework.xml
+C:\Users\Dell\source\repos\sendmail\sendmail\bin\Debug\EntityFramework.SqlServer.xml
+C:\Users\Dell\source\repos\sendmail\sendmail\bin\Debug\System.Data.SQLite.xml
+C:\Users\Dell\source\repos\sendmail\sendmail\obj\Debug\sendmail.csprojAssemblyReference.cache
+C:\Users\Dell\source\repos\sendmail\sendmail\obj\Debug\sendmail.csproj.CoreCompileInputs.cache
+C:\Users\Dell\source\repos\sendmail\sendmail\obj\Debug\sendmail.csproj.CopyComplete
+C:\Users\Dell\source\repos\sendmail\sendmail\obj\Debug\sendmail.exe
+C:\Users\Dell\source\repos\sendmail\sendmail\obj\Debug\sendmail.pdb
