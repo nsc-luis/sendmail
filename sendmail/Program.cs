@@ -2,13 +2,17 @@
 using System.Data;
 using System.Net;
 using System.Net.Mail;
+using System.IO;
 
 namespace sendmail
 {
     class Program
     {
+
         static void Main(string[] args)
         {
+            const string Log = @".\log.txt";
+            StreamWriter sw = !File.Exists(Log) ? File.CreateText(Log) : new StreamWriter(Log, append: true);
             // MENSAJES DE AYUDA
             var mensajes = new
             {
@@ -27,6 +31,7 @@ namespace sendmail
                     "smtpHost\t Servidor SMTP para envio de correos.\n" +
                     "smtpPort\t Puerto del servidor SMTP.\n" +
                     "smtpEncrypt\t [True | False] Establece si se requiere encriptacion para el servidor SMTP.\n" +
+                    "isBodyHtml\t [True | False] Establece si el cuerpo del mensaje es en formato HTML.\n" +
                     "smtpFrom\t Direccion del remitente.\n" +
                     "smtpUser\t Usuario de autenticacion para el servidor SMTP.\n" +
                     "smtpPass\t Contraseña de autenticacion para el servidor SMTP.\n\n" +
@@ -82,8 +87,10 @@ namespace sendmail
                     SmtpClient smtp = new SmtpClient();
                     smtp.Host = smtpServer.Rows[0]["smtpHost"].ToString();
                     smtp.Port = int.Parse(smtpServer.Rows[0]["smtpPort"].ToString());
+                    smtp.EnableSsl = int.Parse(smtpServer.Rows[0]["smtpEncrypt"].ToString()) == 1 ? true : false;
+                    smtp.UseDefaultCredentials = false;
+                    smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
                     smtp.Credentials = new NetworkCredential(smtpServer.Rows[0]["smtpUser"].ToString(), smtpServer.Rows[0]["smtpPass"].ToString());
-                    smtp.EnableSsl = bool.Parse(smtpServer.Rows[0]["smtpEncrypt"].ToString());
                     MailMessage message = new MailMessage();
                     message.From = smtpRemitente == "" ? new MailAddress(smtpServer.Rows[0]["smtpFrom"].ToString()) : new MailAddress(smtpRemitente);
                     foreach(string destinatario in destinatarios)
@@ -93,21 +100,25 @@ namespace sendmail
                     message.ReplyToList.Add(new MailAddress(smtpReplyTo));
                     if (attachment != "")
                     {
-                        foreach(string adjunto in adjuntos)
+                        foreach (string adjunto in adjuntos)
                         {
                             message.Attachments.Add(new Attachment($"{adjunto}"));
-                        }                        
+                        }
                     }
                     message.Subject = subject;
-                    message.IsBodyHtml = true; //to make message body as html  
+                    message.IsBodyHtml = int.Parse(smtpServer.Rows[0]["isBodyHtml"].ToString()) == 1 ? true : false; //to make message body as html  
                     message.Body = body;
                     smtp.Send(message);
                     Console.WriteLine(mensajes.envioSatisfactorio);
+                    sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + mensajes.envioSatisfactorio);
+                    sw.Close();
                     Environment.Exit(0);
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message);
+                    sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + ex.Message);
+                    sw.Close();
                     Environment.Exit(0);
                 }
             }
@@ -119,9 +130,11 @@ namespace sendmail
                 {
                     SmtpClient smtp = new SmtpClient();
                     smtp.Host = smtpServer.Rows[0]["smtpHost"].ToString();
-                    smtp.Port = int.Parse(smtpServer.Rows[0]["smtpPort"].ToString());
+                    smtp.Port = int.Parse(smtpServer.Rows[0]["smtpPort"].ToString());                    
+                    smtp.EnableSsl = int.Parse(smtpServer.Rows[0]["smtpEncrypt"].ToString()) == 1 ? true : false;
+                    smtp.UseDefaultCredentials = false;
+                    smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
                     smtp.Credentials = new NetworkCredential(smtpServer.Rows[0]["smtpUser"].ToString(), smtpServer.Rows[0]["smtpPass"].ToString());
-                    smtp.EnableSsl = bool.Parse(smtpServer.Rows[0]["smtpEncrypt"].ToString());
                     MailMessage message = new MailMessage();
                     message.From = new MailAddress(smtpServer.Rows[0]["smtpFrom"].ToString());
                     message.To.Add(new MailAddress(destinatario));
@@ -130,23 +143,31 @@ namespace sendmail
                     message.Body = "Si puede ver esto entonces el correo se envio satisfactoriamente.";
                     smtp.Send(message);
                     Console.WriteLine(mensajes.envioSatisfactorio);
+                    sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + mensajes.envioSatisfactorio);
+                    sw.Close();
                     Environment.Exit(0);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message);
+                    //Console.WriteLine(ex);
+                    sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + ex);
+                    sw.Close();
                     Environment.Exit(0);
                 }
             }
 
             // ACCION SELECCIONADA DESDE ARGUMENTOS.
+            
             switch (args[0])
-            {
+            { 
                 case "/add":
                     // Console.WriteLine("\nSe ha releccionado la accion: /add");
                     if (args.Length < 8)
                     {
                         Console.WriteLine(mensajes.ayudaAdd);
+                        sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Error: Faltan argumentos");
+                        sw.WriteLine(mensajes.ayudaAdd);
+                        sw.Close();
                         Environment.Exit(0);
                     }
                     var duplicado = settingsdb.qSelectByName(args[1]);
@@ -155,10 +176,13 @@ namespace sendmail
                         if (duplicado.Rows[0]["smtpName"].ToString() == args[1])
                         {
                             Console.WriteLine(mensajes.duplicado);
+                            sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + mensajes.duplicado);
+                            sw.Close();
                             Environment.Exit(0);
                         }
-                    }                    
-                    settingsdb.qInsert(args[1], args[2], int.Parse(args[3]), bool.Parse(args[4]), args[5], args[6], args[7]);
+                    }
+                    settingsdb.qInsert(args[1], args[2], int.Parse(args[3]), int.Parse(args[4].ToString()), int.Parse(args[5].ToString()), args[6], args[7], args[8]);
+                    sw.Close();
                     Environment.Exit(0);
                     break;
                 case "/delete":
@@ -166,12 +190,17 @@ namespace sendmail
                     if (args.Length < 2)
                     {
                         Console.WriteLine(mensajes.ayudaDelete);
+                        sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Error: Faltan argumentos");
+                        sw.WriteLine(mensajes.ayudaDelete);
+                        sw.Close();
                         Environment.Exit(0);
                     }
                     var registroNoEncontrado = settingsdb.qSelectByName(args[1]);
                     if (registroNoEncontrado.Rows.Count < 1)
                     {
                         Console.WriteLine(mensajes.registroNoEncontrado);
+                        sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + mensajes.registroNoEncontrado);
+                        sw.Close();
                         Environment.Exit(0);
                     }
                     settingsdb.qDelete(args[1]);
@@ -182,10 +211,13 @@ namespace sendmail
                     if (args.Length < 5)
                     {
                         Console.WriteLine(mensajes.ayudaSend);
+                        sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Error: Faltan argumentos");
+                        sw.WriteLine(mensajes.ayudaSend);
+                        sw.Close();
                         Environment.Exit(0);
                     }
                     var smtpParams = settingsdb.qSelectByName((args[1]));
-                    if (args.Length < 6)
+                    if (args.Length < 8)
                     {
                         sendMail(smtpParams, args[2], args[3], args[4], args[5], args[6]);
                     } else
@@ -199,6 +231,9 @@ namespace sendmail
                     if (args.Length < 2)
                     {
                         Console.WriteLine(mensajes.ayudaTest);
+                        sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Error: Faltan argumentos");
+                        sw.WriteLine(mensajes.ayudaTest);
+                        sw.Close();
                         Environment.Exit(0);
                     }
                     var smtpTest = settingsdb.qSelectByName((args[1]));
@@ -213,6 +248,7 @@ namespace sendmail
                         Console.WriteLine($"Servidor SMTP: {row["smtpHost"].ToString()}");
                         Console.WriteLine($"Puerto: {row["smtpPort"].ToString()}");
                         Console.WriteLine($"SSL/TLS: {row["smtpEncrypt"].ToString()}");
+                        Console.WriteLine($"BodyHtml: {row["isBodyHtml"].ToString()}");
                         Console.WriteLine($"Remitente: {row["smtpFrom"].ToString()}");
                         Console.WriteLine($"Usuario: {row["smtpUser"].ToString()}\n");
                     }
@@ -222,12 +258,17 @@ namespace sendmail
                     if (args.Length < 2)
                     {
                         Console.WriteLine(mensajes.ayudaQueryByName);
+                        sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Error: Faltan argumentos");
+                        sw.WriteLine(mensajes.ayudaQueryByName);
+                        sw.Close();
                         Environment.Exit(0);
                     }
                     var registroNoEncontrado2 = settingsdb.qSelectByName(args[1]);
                     if (registroNoEncontrado2.Rows.Count < 1)
                     {
                         Console.WriteLine(mensajes.registroNoEncontrado);
+                        sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + mensajes.registroNoEncontrado);
+                        sw.Close();
                         Environment.Exit(0);
                     }
                     var smtpByName = settingsdb.qSelectByName((args[1]));
@@ -237,6 +278,7 @@ namespace sendmail
                         Console.WriteLine($"Servidor SMTP: {row["smtpHost"].ToString()}");
                         Console.WriteLine($"Puerto: {row["smtpPort"].ToString()}");
                         Console.WriteLine($"SSL/TLS: {row["smtpEncrypt"].ToString()}");
+                        Console.WriteLine($"BodyHtml: {row["isBodyHtml"].ToString()}");
                         Console.WriteLine($"Remitente: {row["smtpFrom"].ToString()}");
                         Console.WriteLine($"Usuario: {row["smtpUser"].ToString()}\n");
                     }
@@ -244,6 +286,9 @@ namespace sendmail
                     break;
                 default:
                     Console.WriteLine(mensajes.ayudaBasica);
+                    sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Ayuda basica.");
+                    sw.Write(mensajes.ayudaBasica);
+                    sw.Close();
                     Environment.Exit(0);
                     break;
             }
