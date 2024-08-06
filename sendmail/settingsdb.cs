@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Data;
 using System.Data.SQLite;
+using System.IO;
 
 namespace sendmail
 {
     class settingsdb
     {
-        const string DBName = @".\db\settingsdb.db";
-        const string Log = @".\log.txt";
+        static string sCurrentDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        static string DBName = sCurrentDirectory + "db\\settingsdb.db";
+        static string Log = sCurrentDirectory + "log.txt";
         static SQLiteConnection db = new SQLiteConnection(string.Format("Data Source={0};Version=3;", DBName));
 
         // CONSTRUCTOR, VERIFICA CONEXION A LA BASE DE DATOS DE CONFIGURACION
@@ -75,7 +77,6 @@ namespace sendmail
         {
             var query = "INSERT INTO smtpServer (smtpName,smtpHost,smtpPort,smtpEncrypt,isBodyHtml,smtpFrom,smtpUser,smtpPass) " +
                 $"VALUES('{smtpName}', '{smtpHost}', {smtpPort}, '{smtpEncrypt}', '{isBodyHtml}', '{smtpFrom}', '{smtpUser}', '{smtpPass}')";
-            //StreamWriter sw = !File.Exists(Log) ? File.CreateText(Log) : new StreamWriter(Log, append: true);
             try
             {
                 var con = GetInstance();
@@ -83,14 +84,10 @@ namespace sendmail
                 cmd.ExecuteNonQuery();
                 con.Close();
                 Console.WriteLine("Registro agregado correctamente.\n");
-                //sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\tRegistro agregado correctamente.\n");
-                //sw.Close();
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                //sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + ex.Message);
-                //sw.Close();
             }
         }
 
@@ -100,7 +97,6 @@ namespace sendmail
         static public void qDelete(string smtpName)
         {
             var query = $"DELETE FROM smtpServer WHERE smtpName='{smtpName}'";
-            //StreamWriter sw = !File.Exists(Log) ? File.CreateText(Log) : new StreamWriter(Log, append: true);
             try
             {
                 var con = GetInstance();
@@ -108,13 +104,10 @@ namespace sendmail
                 cmd.ExecuteNonQuery();
                 con.Close();
                 Console.WriteLine("Registro se elimino correctamente\n");
-                //sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\tRegistro se elimino correctamente\n");
             }
             catch (Exception ex)
             {
                 Console.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + ex.Message);
-                //sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + ex.Message);
-                //sw.Close();
             }
         }
 

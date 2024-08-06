@@ -11,7 +11,7 @@ namespace sendmail
 
         static void Main(string[] args)
         {
-            const string Log = @".\log.txt";
+            string Log = AppDomain.CurrentDomain.BaseDirectory + "log.txt";
             StreamWriter sw = !File.Exists(Log) ? File.CreateText(Log) : new StreamWriter(Log, append: true);
             // MENSAJES DE AYUDA
             var mensajes = new
@@ -157,140 +157,148 @@ namespace sendmail
             }
 
             // ACCION SELECCIONADA DESDE ARGUMENTOS.
-            
-            switch (args[0])
-            { 
-                case "/add":
-                    // Console.WriteLine("\nSe ha releccionado la accion: /add");
-                    if (args.Length < 8)
-                    {
-                        Console.WriteLine(mensajes.ayudaAdd);
-                        sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Error: Faltan argumentos");
-                        sw.WriteLine(mensajes.ayudaAdd);
-                        sw.Close();
-                        Environment.Exit(0);
-                    }
-                    var duplicado = settingsdb.qSelectByName(args[1]);
-                    if (duplicado.Rows.Count > 0)
-                    {
-                        if (duplicado.Rows[0]["smtpName"].ToString() == args[1])
+            try
+            {
+                switch (args[0])
+                {
+                    case "/add":
+                        // Console.WriteLine("\nSe ha releccionado la accion: /add");
+                        if (args.Length < 8)
                         {
-                            Console.WriteLine(mensajes.duplicado);
-                            sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + mensajes.duplicado);
+                            Console.WriteLine(mensajes.ayudaAdd);
+                            sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Error: Faltan argumentos");
+                            sw.WriteLine(mensajes.ayudaAdd);
                             sw.Close();
                             Environment.Exit(0);
                         }
-                    }
-                    settingsdb.qInsert(args[1], args[2], int.Parse(args[3]), int.Parse(args[4].ToString()), int.Parse(args[5].ToString()), args[6], args[7], args[8]);
-                    sw.Close();
-                    Environment.Exit(0);
-                    break;
-                case "/delete":
-                    // Console.WriteLine("\nSe ha releccionado la accion: /delete");
-                    if (args.Length < 2)
-                    {
-                        Console.WriteLine(mensajes.ayudaDelete);
-                        sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Error: Faltan argumentos");
-                        sw.WriteLine(mensajes.ayudaDelete);
+                        var duplicado = settingsdb.qSelectByName(args[1]);
+                        if (duplicado.Rows.Count > 0)
+                        {
+                            if (duplicado.Rows[0]["smtpName"].ToString() == args[1])
+                            {
+                                Console.WriteLine(mensajes.duplicado);
+                                sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + mensajes.duplicado);
+                                sw.Close();
+                                Environment.Exit(0);
+                            }
+                        }
+                        settingsdb.qInsert(args[1], args[2], int.Parse(args[3]), int.Parse(args[4].ToString()), int.Parse(args[5].ToString()), args[6], args[7], args[8]);
                         sw.Close();
                         Environment.Exit(0);
-                    }
-                    var registroNoEncontrado = settingsdb.qSelectByName(args[1]);
-                    if (registroNoEncontrado.Rows.Count < 1)
-                    {
-                        Console.WriteLine(mensajes.registroNoEncontrado);
-                        sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + mensajes.registroNoEncontrado);
+                        break;
+                    case "/delete":
+                        // Console.WriteLine("\nSe ha releccionado la accion: /delete");
+                        if (args.Length < 2)
+                        {
+                            Console.WriteLine(mensajes.ayudaDelete);
+                            sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Error: Faltan argumentos");
+                            sw.WriteLine(mensajes.ayudaDelete);
+                            sw.Close();
+                            Environment.Exit(0);
+                        }
+                        var registroNoEncontrado = settingsdb.qSelectByName(args[1]);
+                        if (registroNoEncontrado.Rows.Count < 1)
+                        {
+                            Console.WriteLine(mensajes.registroNoEncontrado);
+                            sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + mensajes.registroNoEncontrado);
+                            sw.Close();
+                            Environment.Exit(0);
+                        }
+                        settingsdb.qDelete(args[1]);
+                        Environment.Exit(0);
+                        break;
+                    case "/send":
+                        // Console.WriteLine("\nSe ha releccionado la accion: /test");
+                        if (args.Length < 5)
+                        {
+                            Console.WriteLine(mensajes.ayudaSend);
+                            sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Error: Faltan argumentos");
+                            sw.WriteLine(mensajes.ayudaSend);
+                            sw.Close();
+                            Environment.Exit(0);
+                        }
+                        var smtpParams = settingsdb.qSelectByName((args[1]));
+                        if (args.Length < 8)
+                        {
+                            sendMail(smtpParams, args[2], args[3], args[4], args[5], args[6]);
+                        }
+                        else
+                        {
+                            sendMail(smtpParams, args[2], args[3], args[4], args[5], args[6], args[7]);
+                        }
+                        Environment.Exit(0);
+                        break;
+                    case "/test":
+                        // Console.WriteLine("Se ha releccionado la accion: /test");
+                        if (args.Length < 2)
+                        {
+                            Console.WriteLine(mensajes.ayudaTest);
+                            sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Error: Faltan argumentos");
+                            sw.WriteLine(mensajes.ayudaTest);
+                            sw.Close();
+                            Environment.Exit(0);
+                        }
+                        var smtpTest = settingsdb.qSelectByName((args[1]));
+                        sendTestMail(smtpTest, args[2]);
+                        Environment.Exit(0);
+                        break;
+                    case "/queryAll":
+                        var data = settingsdb.qSelect();
+                        foreach (DataRow row in data.Rows)
+                        {
+                            Console.WriteLine($"\nIdentificador: {row["smtpName"].ToString()}");
+                            Console.WriteLine($"Servidor SMTP: {row["smtpHost"].ToString()}");
+                            Console.WriteLine($"Puerto: {row["smtpPort"].ToString()}");
+                            Console.WriteLine($"SSL/TLS: {row["smtpEncrypt"].ToString()}");
+                            Console.WriteLine($"BodyHtml: {row["isBodyHtml"].ToString()}");
+                            Console.WriteLine($"Remitente: {row["smtpFrom"].ToString()}");
+                            Console.WriteLine($"Usuario: {row["smtpUser"].ToString()}\n");
+                        }
+                        Environment.Exit(0);
+                        break;
+                    case "/queryByName":
+                        if (args.Length < 2)
+                        {
+                            Console.WriteLine(mensajes.ayudaQueryByName);
+                            sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Error: Faltan argumentos");
+                            sw.WriteLine(mensajes.ayudaQueryByName);
+                            sw.Close();
+                            Environment.Exit(0);
+                        }
+                        var registroNoEncontrado2 = settingsdb.qSelectByName(args[1]);
+                        if (registroNoEncontrado2.Rows.Count < 1)
+                        {
+                            Console.WriteLine(mensajes.registroNoEncontrado);
+                            sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + mensajes.registroNoEncontrado);
+                            sw.Close();
+                            Environment.Exit(0);
+                        }
+                        var smtpByName = settingsdb.qSelectByName((args[1]));
+                        foreach (DataRow row in smtpByName.Rows)
+                        {
+                            Console.WriteLine($"\nIdentificador: {row["smtpName"].ToString()}");
+                            Console.WriteLine($"Servidor SMTP: {row["smtpHost"].ToString()}");
+                            Console.WriteLine($"Puerto: {row["smtpPort"].ToString()}");
+                            Console.WriteLine($"SSL/TLS: {row["smtpEncrypt"].ToString()}");
+                            Console.WriteLine($"BodyHtml: {row["isBodyHtml"].ToString()}");
+                            Console.WriteLine($"Remitente: {row["smtpFrom"].ToString()}");
+                            Console.WriteLine($"Usuario: {row["smtpUser"].ToString()}\n");
+                        }
+                        Environment.Exit(0);
+                        break;
+                    default:
+                        Console.WriteLine(mensajes.ayudaBasica);
+                        sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Ayuda basica.");
+                        sw.Write(mensajes.ayudaBasica);
                         sw.Close();
                         Environment.Exit(0);
-                    }
-                    settingsdb.qDelete(args[1]);
-                    Environment.Exit(0);
-                    break;
-                case "/send":
-                    // Console.WriteLine("\nSe ha releccionado la accion: /test");
-                    if (args.Length < 5)
-                    {
-                        Console.WriteLine(mensajes.ayudaSend);
-                        sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Error: Faltan argumentos");
-                        sw.WriteLine(mensajes.ayudaSend);
-                        sw.Close();
-                        Environment.Exit(0);
-                    }
-                    var smtpParams = settingsdb.qSelectByName((args[1]));
-                    if (args.Length < 8)
-                    {
-                        sendMail(smtpParams, args[2], args[3], args[4], args[5], args[6]);
-                    } else
-                    {
-                        sendMail(smtpParams, args[2], args[3], args[4], args[5], args[6], args[7]);
-                    }
-                    Environment.Exit(0);
-                    break;
-                case "/test":
-                    // Console.WriteLine("Se ha releccionado la accion: /test");
-                    if (args.Length < 2)
-                    {
-                        Console.WriteLine(mensajes.ayudaTest);
-                        sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Error: Faltan argumentos");
-                        sw.WriteLine(mensajes.ayudaTest);
-                        sw.Close();
-                        Environment.Exit(0);
-                    }
-                    var smtpTest = settingsdb.qSelectByName((args[1]));
-                    sendTestMail(smtpTest, args[2]);
-                    Environment.Exit(0);
-                    break;
-                case "/queryAll":
-                    var data = settingsdb.qSelect();
-                    foreach (DataRow row in data.Rows)
-                    {
-                        Console.WriteLine($"\nIdentificador: {row["smtpName"].ToString()}");
-                        Console.WriteLine($"Servidor SMTP: {row["smtpHost"].ToString()}");
-                        Console.WriteLine($"Puerto: {row["smtpPort"].ToString()}");
-                        Console.WriteLine($"SSL/TLS: {row["smtpEncrypt"].ToString()}");
-                        Console.WriteLine($"BodyHtml: {row["isBodyHtml"].ToString()}");
-                        Console.WriteLine($"Remitente: {row["smtpFrom"].ToString()}");
-                        Console.WriteLine($"Usuario: {row["smtpUser"].ToString()}\n");
-                    }
-                    Environment.Exit(0);
-                    break;
-                case "/queryByName":
-                    if (args.Length < 2)
-                    {
-                        Console.WriteLine(mensajes.ayudaQueryByName);
-                        sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Error: Faltan argumentos");
-                        sw.WriteLine(mensajes.ayudaQueryByName);
-                        sw.Close();
-                        Environment.Exit(0);
-                    }
-                    var registroNoEncontrado2 = settingsdb.qSelectByName(args[1]);
-                    if (registroNoEncontrado2.Rows.Count < 1)
-                    {
-                        Console.WriteLine(mensajes.registroNoEncontrado);
-                        sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + mensajes.registroNoEncontrado);
-                        sw.Close();
-                        Environment.Exit(0);
-                    }
-                    var smtpByName = settingsdb.qSelectByName((args[1]));
-                    foreach(DataRow row in smtpByName.Rows)
-                    {
-                        Console.WriteLine($"\nIdentificador: {row["smtpName"].ToString()}");
-                        Console.WriteLine($"Servidor SMTP: {row["smtpHost"].ToString()}");
-                        Console.WriteLine($"Puerto: {row["smtpPort"].ToString()}");
-                        Console.WriteLine($"SSL/TLS: {row["smtpEncrypt"].ToString()}");
-                        Console.WriteLine($"BodyHtml: {row["isBodyHtml"].ToString()}");
-                        Console.WriteLine($"Remitente: {row["smtpFrom"].ToString()}");
-                        Console.WriteLine($"Usuario: {row["smtpUser"].ToString()}\n");
-                    }
-                    Environment.Exit(0);
-                    break;
-                default:
-                    Console.WriteLine(mensajes.ayudaBasica);
-                    sw.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\t" + "Ayuda basica.");
-                    sw.Write(mensajes.ayudaBasica);
-                    sw.Close();
-                    Environment.Exit(0);
-                    break;
+                        break;
+                }
+            
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
             }
             Console.Read();
         }
