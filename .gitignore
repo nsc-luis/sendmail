@@ -1,3 +1,4 @@
-\packages\
-\sendmail\bin
-\sendmail\obj
+packages/
+sendmail/bin
+sendmail/obj
+.vs/sendmail
